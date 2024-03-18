@@ -2,8 +2,6 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-// Uncomment this line to use console.log
-// import "hardhat/console.sol";
 
 contract SuiaClub is OwnableUpgradeable {
     // data structures
@@ -11,21 +9,21 @@ contract SuiaClub is OwnableUpgradeable {
         // id is the unique identifier of the club, start from 0
         uint id;
         address owner;
-        bytes name;
-        bytes description;
-        bytes logo;
+        string name;
+        string description;
+        string logo;
         // threshold_type is the type of asset required to join the club
         // e.g. "ETH", "ERC20:0x...", "ERC721:0x...", "ERC1155:0x..."
-        bytes threshold_type;
+        string threshold_type;
         // threshold is the minimum number of assets required to join the club
         uint threshold;
-        bytes announcement;
+        string announcement;
         uint channel_count;
         mapping(address => bool) admins;
     }
 
     struct Channel {
-        bytes name;
+        string name;
         bool deleted;
     }
 
@@ -51,17 +49,26 @@ contract SuiaClub is OwnableUpgradeable {
     event ClubCreated(
         uint indexed id,
         address indexed owner,
-        bytes indexed name,
-        bytes description,
-        bytes logo,
-        bytes threshold_type,
+        string indexed name,
+        string description,
+        string logo,
+        string threshold_type,
         uint threshold
     );
 
     event ChannelCreated(
         uint indexed club_id,
         uint indexed channel_index,
-        bytes indexed name
+        string indexed name
+    );
+
+    event MessageCreated(
+        uint indexed club_id,
+        uint indexed channel_index,
+        address indexed sender,
+        uint message_index,
+        bytes content,
+        uint timestamp
     );
 
     // functions
@@ -72,18 +79,18 @@ contract SuiaClub is OwnableUpgradeable {
     }
 
     function create_club(
-        bytes memory _name,
-        bytes memory _logo,
-        bytes memory _description,
-        bytes memory _announcement,
-        bytes memory _threshold_type,
+        string memory _name,
+        string memory _logo,
+        string memory _description,
+        string memory _announcement,
+        string memory _threshold_type,
         uint _threshold,
-        bytes memory _default_channel_name
+        string memory _default_channel_name
     ) payable public {
         require(msg.value >= fee, "Insufficient funds to create club");
-        require(_name.length > 0, "invalid club name");
-        require(_threshold_type.length > 0, "invalid threshold type");
-        require(_default_channel_name.length > 0, "invalid default channel name");
+        require(bytes(_name).length > 0, "invalid club name");
+        require(bytes(_threshold_type).length > 0, "invalid threshold type");
+        require(bytes(_default_channel_name).length > 0, "invalid default channel name");
         uint clubId = club_count;
         club_count++;
         // create club
@@ -135,41 +142,41 @@ contract SuiaClub is OwnableUpgradeable {
         club.admins[_admin] = false;
     }
 
-    function update_club_name(uint _club_id, bytes memory _name) public {
-        require(_name.length > 0, "invalid club name");
+    function update_club_name(uint _club_id, string memory _name) public {
+        require(bytes(_name).length > 0, "invalid club name");
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
         club.name = _name;
     }
 
-    function update_club_description(uint _club_id, bytes memory _description) public {
+    function update_club_description(uint _club_id, string memory _description) public {
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
         club.description = _description;
     }
 
-    function update_club_logo(uint _club_id, bytes memory _logo) public {
+    function update_club_logo(uint _club_id, string memory _logo) public {
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
         club.logo = _logo;
     }
 
-    function update_club_announcement(uint _club_id, bytes memory _announcement) public {
+    function update_club_announcement(uint _club_id, string memory _announcement) public {
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
         club.announcement = _announcement;
     }
 
-    function update_club_threshold(uint _club_id, bytes memory _threshold_type, uint _threshold) public {
-        require(_threshold_type.length > 0, "invalid threshold type");
+    function update_club_threshold(uint _club_id, string memory _threshold_type, uint _threshold) public {
+        require(bytes(_threshold_type).length > 0, "invalid threshold type");
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
         club.threshold_type = _threshold_type;
         club.threshold = _threshold;
     }
 
-    function add_club_channel(uint _club_id, bytes memory _name) public {
-        require(_name.length > 0, "invalid channel name");
+    function add_club_channel(uint _club_id, string memory _name) public {
+        require(bytes(_name).length > 0, "invalid channel name");
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
         uint channel_index = club.channel_count;
@@ -179,8 +186,8 @@ contract SuiaClub is OwnableUpgradeable {
         emit ChannelCreated(_club_id, channel_index, _name);
     }
 
-    function update_club_channel_name(uint _club_id, uint _channel_index, bytes memory _name) public {
-        require(_name.length > 0, "invalid channel name");
+    function update_club_channel_name(uint _club_id, uint _channel_index, string memory _name) public {
+        require(bytes(_name).length > 0, "invalid channel name");
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
         require(_channel_index < club.channel_count, "Channel does not exist");
@@ -198,7 +205,7 @@ contract SuiaClub is OwnableUpgradeable {
 
     function new_message(uint _club_id, uint _channel_index, bytes memory _content) public {
         Channel storage channel = channels[_club_id][_channel_index];
-        require(channel.name.length > 0, "Club or Channel does not exist");
+        require(bytes(channel.name).length > 0, "Club or Channel does not exist");
         require(!channel.deleted, "Channel is deleted");
         Message[] storage channel_messages = messages[_club_id][_channel_index];
         channel_messages.push(Message({
@@ -207,6 +214,14 @@ contract SuiaClub is OwnableUpgradeable {
             timestamp: block.timestamp,
             deleted: false
         }));
+        emit MessageCreated(
+            _club_id,
+            _channel_index,
+            msg.sender,
+            channel_messages.length - 1,
+            _content,
+            block.timestamp
+        );
     }
 
     function delete_message(uint _club_id, uint _channel_index, uint _message_index) public {
@@ -215,5 +230,33 @@ contract SuiaClub is OwnableUpgradeable {
         Message storage message = channel_messages[_message_index];
         require(message.sender == msg.sender, "Unauthorized to delete message");
         message.deleted = true;
+    }
+
+    // view functions
+    function get_club_channel_messages(uint _club_id, uint _channel_index, int signed_offset, uint limit) public view returns (Message[] memory msgs, uint total_num) {
+        Channel storage channel = channels[_club_id][_channel_index];
+        require(bytes(channel.name).length > 0, "Club or Channel does not exist");
+        require(!channel.deleted, "Channel is deleted");
+        Message[] storage channel_messages = messages[_club_id][_channel_index];
+        uint length = channel_messages.length;
+        uint offset;
+        if(signed_offset < 0) {
+            require(length > uint(-signed_offset), "Offset out of range");
+            offset = length - uint(-signed_offset);
+        } else {
+            offset = uint(signed_offset);
+        }
+        if (offset >= length) {
+            return (new Message[](0), length);
+        }
+        uint end = offset + limit;
+        if (end > length) {
+            end = length;
+        }
+        Message[] memory result = new Message[](end - offset);
+        for (uint i = offset; i < end; i++) {
+            result[i - offset] = channel_messages[i];
+        }
+        return (result, length);
     }
 }
