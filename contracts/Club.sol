@@ -27,12 +27,12 @@ contract SuiaClub is OwnableUpgradeable {
         bool deleted;
     }
 
-    struct Message {
-        address sender;
-        bytes content;
-        uint timestamp;
-        bool deleted;
-    }
+//    struct Message {
+//        address sender;
+//        bytes content;
+//        uint timestamp;
+//        bool deleted;
+//    }
 
     // fee is the amount of native token required to create a club
     uint public fee;
@@ -42,10 +42,10 @@ contract SuiaClub is OwnableUpgradeable {
     uint public club_count;
     // channels, club_id => channel_index => channel
     mapping(uint => mapping(uint => Channel)) public channels;
-    // messages
-    mapping(uint => mapping(uint => Message[])) public messages;
+//    // messages
+//    mapping(uint => mapping(uint => Message[])) public messages;
 
-    // events
+    // ======== events ========
     event ClubCreated(
         uint indexed id,
         address indexed owner,
@@ -62,17 +62,16 @@ contract SuiaClub is OwnableUpgradeable {
         string indexed name
     );
 
-    event MessageCreated(
-        uint indexed club_id,
-        uint indexed channel_index,
-        address indexed sender,
-        uint message_index,
-        bytes content,
-        uint timestamp
-    );
+//    event MessageCreated(
+//        uint indexed club_id,
+//        uint indexed channel_index,
+//        address indexed sender,
+//        uint message_index,
+//        bytes content,
+//        uint timestamp
+//    );
 
-    // functions
-
+    // ======== functions ========
     function initialize(uint _fee) public initializer {
         OwnableUpgradeable.__Ownable_init(msg.sender);
         fee = _fee;
@@ -203,60 +202,60 @@ contract SuiaClub is OwnableUpgradeable {
         channel.deleted = true;
     }
 
-    function new_message(uint _club_id, uint _channel_index, bytes memory _content) public {
-        Channel storage channel = channels[_club_id][_channel_index];
-        require(bytes(channel.name).length > 0, "Club or Channel does not exist");
-        require(!channel.deleted, "Channel is deleted");
-        Message[] storage channel_messages = messages[_club_id][_channel_index];
-        channel_messages.push(Message({
-            sender: msg.sender,
-            content: _content,
-            timestamp: block.timestamp,
-            deleted: false
-        }));
-        emit MessageCreated(
-            _club_id,
-            _channel_index,
-            msg.sender,
-            channel_messages.length - 1,
-            _content,
-            block.timestamp
-        );
-    }
-
-    function delete_message(uint _club_id, uint _channel_index, uint _message_index) public {
-        Message[] storage channel_messages = messages[_club_id][_channel_index];
-        require(_message_index < channel_messages.length, "Message does not exist");
-        Message storage message = channel_messages[_message_index];
-        require(message.sender == msg.sender, "Unauthorized to delete message");
-        message.deleted = true;
-    }
-
-    // view functions
-    function get_club_channel_messages(uint _club_id, uint _channel_index, int signed_offset, uint limit) public view returns (Message[] memory msgs, uint total_num) {
-        Channel storage channel = channels[_club_id][_channel_index];
-        require(bytes(channel.name).length > 0, "Club or Channel does not exist");
-        require(!channel.deleted, "Channel is deleted");
-        Message[] storage channel_messages = messages[_club_id][_channel_index];
-        uint length = channel_messages.length;
-        uint offset;
-        if(signed_offset < 0) {
-            require(length > uint(-signed_offset), "Offset out of range");
-            offset = length - uint(-signed_offset);
-        } else {
-            offset = uint(signed_offset);
-        }
-        if (offset >= length) {
-            return (new Message[](0), length);
-        }
-        uint end = offset + limit;
-        if (end > length) {
-            end = length;
-        }
-        Message[] memory result = new Message[](end - offset);
-        for (uint i = offset; i < end; i++) {
-            result[i - offset] = channel_messages[i];
-        }
-        return (result, length);
-    }
+//    function new_message(uint _club_id, uint _channel_index, bytes memory _content) public {
+//        Channel storage channel = channels[_club_id][_channel_index];
+//        require(bytes(channel.name).length > 0, "Club or Channel does not exist");
+//        require(!channel.deleted, "Channel is deleted");
+//        Message[] storage channel_messages = messages[_club_id][_channel_index];
+//        channel_messages.push(Message({
+//            sender: msg.sender,
+//            content: _content,
+//            timestamp: block.timestamp,
+//            deleted: false
+//        }));
+//        emit MessageCreated(
+//            _club_id,
+//            _channel_index,
+//            msg.sender,
+//            channel_messages.length - 1,
+//            _content,
+//            block.timestamp
+//        );
+//    }
+//
+//    function delete_message(uint _club_id, uint _channel_index, uint _message_index) public {
+//        Message[] storage channel_messages = messages[_club_id][_channel_index];
+//        require(_message_index < channel_messages.length, "Message does not exist");
+//        Message storage message = channel_messages[_message_index];
+//        require(message.sender == msg.sender, "Unauthorized to delete message");
+//        message.deleted = true;
+//    }
+//
+//    // view functions
+//    function get_club_channel_messages(uint _club_id, uint _channel_index, int signed_offset, uint limit) public view returns (Message[] memory msgs, uint total_num) {
+//        Channel storage channel = channels[_club_id][_channel_index];
+//        require(bytes(channel.name).length > 0, "Club or Channel does not exist");
+//        require(!channel.deleted, "Channel is deleted");
+//        Message[] storage channel_messages = messages[_club_id][_channel_index];
+//        uint length = channel_messages.length;
+//        uint offset;
+//        if(signed_offset < 0) {
+//            require(length > uint(-signed_offset), "Offset out of range");
+//            offset = length - uint(-signed_offset);
+//        } else {
+//            offset = uint(signed_offset);
+//        }
+//        if (offset >= length) {
+//            return (new Message[](0), length);
+//        }
+//        uint end = offset + limit;
+//        if (end > length) {
+//            end = length;
+//        }
+//        Message[] memory result = new Message[](end - offset);
+//        for (uint i = offset; i < end; i++) {
+//            result[i - offset] = channel_messages[i];
+//        }
+//        return (result, length);
+//    }
 }

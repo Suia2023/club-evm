@@ -148,31 +148,31 @@ async function main() {
   const message = 'hello world';
   const encodedMessage = messageEncoder.encode(message, MessageType.RAW);
   const encodedMessageHex = bytesToHex(encodedMessage);
-  const newMessageTx = await club.write.new_message([clubId, 1n, encodedMessageHex]);
-  const newMessageTxReceipt = await publicClient.waitForTransactionReceipt({ hash: newMessageTx });
-  const newMessageEvents = parseEventLogs({
-    abi,
-    logs: newMessageTxReceipt.logs,
-  });
-  console.log('newMessageEvents:', newMessageEvents);
-  // new 100 messages
-  const txns = [];
-  for (let i = 0; i < 100; i++) {
-    const message = `message ${i}`;
-    const encodedMessage = messageEncoder.encode(message, MessageType.XOR);
-    const encodedMessageHex = bytesToHex(encodedMessage);
-    const newMessageTx = await club.write.new_message([clubId, 1n, encodedMessageHex]);
-    txns.push(newMessageTx);
-  }
-  await Promise.all(txns.map((tx) => publicClient.waitForTransactionReceipt({ hash: tx })));
-  // query messages
-  const [messages, total_num] = await club.read.get_club_channel_messages([clubId, 1n, -10n, 10n]);
-  console.log('total_num:', total_num);
-  console.log('messages:', messages);
-  console.log(
-    'decodedMessages:',
-    messages.map((m: any) => messageEncoder.decode(Uint8Array.from(Buffer.from(m.content.slice(2), 'hex')))),
-  );
+  // const newMessageTx = await club.write.new_message([clubId, 1n, encodedMessageHex]);
+  // const newMessageTxReceipt = await publicClient.waitForTransactionReceipt({ hash: newMessageTx });
+  // const newMessageEvents = parseEventLogs({
+  //   abi,
+  //   logs: newMessageTxReceipt.logs,
+  // });
+  // console.log('newMessageEvents:', newMessageEvents);
+  // // new 100 messages
+  // const txns = [];
+  // for (let i = 0; i < 100; i++) {
+  //   const message = `message ${i}`;
+  //   const encodedMessage = messageEncoder.encode(message, MessageType.XOR);
+  //   const encodedMessageHex = bytesToHex(encodedMessage);
+  //   const newMessageTx = await club.write.new_message([clubId, 1n, encodedMessageHex]);
+  //   txns.push(newMessageTx);
+  // }
+  // await Promise.all(txns.map((tx) => publicClient.waitForTransactionReceipt({ hash: tx })));
+  // // query messages
+  // const [messages, total_num] = await club.read.get_club_channel_messages([clubId, 1n, -10n, 10n]);
+  // console.log('total_num:', total_num);
+  // console.log('messages:', messages);
+  // console.log(
+  //   'decodedMessages:',
+  //   messages.map((m: any) => messageEncoder.decode(Uint8Array.from(Buffer.from(m.content.slice(2), 'hex')))),
+  // );
 }
 
 main()
