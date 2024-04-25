@@ -9,7 +9,7 @@ import {
   fromHex,
 } from 'viem';
 import hre from 'hardhat';
-import { deploy } from './deploy';
+import { deploy } from './utils';
 import { MessageEncoder, MessageType } from './message_encoder';
 
 function assert(condition: boolean, message: string) {
@@ -20,10 +20,7 @@ function assert(condition: boolean, message: string) {
 
 const messageEncoder = new MessageEncoder();
 
-async function main() {
-  // deploy
-  const clubAddr = await deploy();
-  console.log(`clubAddr: ${clubAddr}`);
+async function interact(clubAddr: string) {
   // init clients
   const publicClient = await hre.viem.getPublicClient();
   const [ownerWalletClient, userWalletClient] = await hre.viem.getWalletClients();
@@ -39,8 +36,21 @@ async function main() {
     },
   });
   // interact with club
-  const fee = await club.read.fee();
+  let fee = await club.read.fee();
   console.log(`fee: ${formatEther(fee)}`);
+  // // write new fee
+  // const clubOwner = getContract({
+  //   address: clubAddr as any,
+  //   abi,
+  //   client: {
+  //     public: publicClient,
+  //     wallet: ownerWalletClient,
+  //   },
+  // });
+  // fee = fee * 2n;
+  // await clubOwner.write.set_fee([fee]);
+  // fee = await club.read.fee();
+  // console.log(`new fee: ${formatEther(fee)}`);
   // create club
   const createTx = await club.write.create_club(
     [
@@ -173,6 +183,17 @@ async function main() {
   //   'decodedMessages:',
   //   messages.map((m: any) => messageEncoder.decode(Uint8Array.from(Buffer.from(m.content.slice(2), 'hex')))),
   // );
+}
+
+async function main() {
+  // deploy
+  const clubAddr = await deploy();
+  console.log(`clubAddr: ${clubAddr}`);
+  // interact
+  const [deployer, user] = await hre.viem.getWalletClients();
+  console.log(`deployer: ${await deployer.account.address}`);
+  console.log(`user: ${await user.account.address}`);
+  await interact(clubAddr);
 }
 
 main()

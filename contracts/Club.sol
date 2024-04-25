@@ -77,6 +77,10 @@ contract SuiaClub is OwnableUpgradeable {
         fee = _fee;
     }
 
+    function set_fee(uint _fee) public onlyOwner {
+        fee = _fee;
+    }
+
     function create_club(
         string memory _name,
         string memory _logo,

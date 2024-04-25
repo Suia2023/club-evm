@@ -34,6 +34,7 @@
     "viem": "^2.7.6"
   },
   "dependencies": {
-    "@openzeppelin/contracts-upgradeable": "^5.0.2"
+    "@openzeppelin/contracts-upgradeable": "^5.0.2",
+    "dotenv": "^16.4.5"
   }
 }

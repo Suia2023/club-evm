@@ -1,13 +1,17 @@
-import { parseEther, formatEther } from 'viem';
 import hre from 'hardhat';
-import { ethers, upgrades } from 'hardhat';
+import { deploy } from './utils';
 
-const ONE_GWEI: bigint = parseEther('0.001');
-
-export async function deploy(): Promise<string> {
-  const SuiaClub = await ethers.getContractFactory('SuiaClub');
-  const club = await upgrades.deployProxy(SuiaClub, [ONE_GWEI]);
-  await club.waitForDeployment();
-  const clubAddr = await club.getAddress();
-  return clubAddr;
+async function main() {
+  const [deployer] = await hre.viem.getWalletClients();
+  console.log(`deployer: ${await deployer.account.address}`);
+  // deploy
+  const clubAddr = await deploy();
+  console.log(`clubAddr: ${clubAddr}`);
 }
+
+main()
+  .then(() => process.exit())
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

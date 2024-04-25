@@ -1,13 +1,8 @@
-# Sample Hardhat Project
+# suia club evm
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+## Deployed Contracts
 
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.ts
-```
+- Base Sepolia: [0x8a9037e8e75D86c5f688543ff0C72107b2538424](https://base-sepolia.blockscout.com/address/0x8a9037e8e75D86c5f688543ff0C72107b2538424)
+- Base:
+- Ethereum:
+- BNB Smart Chain:
