@@ -2,7 +2,7 @@
 
 ## Deployed Contracts
 
-- Base Sepolia: [0x8a9037e8e75D86c5f688543ff0C72107b2538424](https://base-sepolia.blockscout.com/address/0x8a9037e8e75D86c5f688543ff0C72107b2538424)
-- Base:
+- Base Sepolia: [0xB72cC74d44d8166cfA4AeBF3ff4758B78B19E97f](https://base-sepolia.blockscout.com/address/0xB72cC74d44d8166cfA4AeBF3ff4758B78B19E97f)
+- Base: [0xF1D96f5B1d338E4279c36D97B23BDf1946AE62B9](https://basescan.org/address/0xF1D96f5B1d338E4279c36D97B23BDf1946AE62B9)
 - Ethereum:
 - BNB Smart Chain:

@@ -81,6 +81,10 @@ contract SuiaClub is OwnableUpgradeable {
         fee = _fee;
     }
 
+    function withdraw() public onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
     function create_club(
         string memory _name,
         string memory _logo,

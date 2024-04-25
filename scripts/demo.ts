@@ -6,7 +6,7 @@ import {
   decodeEventLog,
   parseEventLogs,
   bytesToHex,
-  fromHex,
+  fromHex, Address,
 } from 'viem';
 import hre from 'hardhat';
 import { deploy } from './utils';
@@ -38,19 +38,19 @@ async function interact(clubAddr: string) {
   // interact with club
   let fee = await club.read.fee();
   console.log(`fee: ${formatEther(fee)}`);
-  // // write new fee
-  // const clubOwner = getContract({
-  //   address: clubAddr as any,
-  //   abi,
-  //   client: {
-  //     public: publicClient,
-  //     wallet: ownerWalletClient,
-  //   },
-  // });
-  // fee = fee * 2n;
-  // await clubOwner.write.set_fee([fee]);
-  // fee = await club.read.fee();
-  // console.log(`new fee: ${formatEther(fee)}`);
+  // write new fee
+  const clubOwner = getContract({
+    address: clubAddr as any,
+    abi,
+    client: {
+      public: publicClient,
+      wallet: ownerWalletClient,
+    },
+  });
+  fee = fee * 2n;
+  await clubOwner.write.set_fee([fee]);
+  fee = await club.read.fee();
+  console.log(`new fee: ${formatEther(fee)}`);
   // create club
   const createTx = await club.write.create_club(
     [
@@ -74,6 +74,13 @@ async function interact(clubAddr: string) {
     logs: createClubReceipt.logs,
   });
   console.log('createClubEvents:', createClubEvents);
+  // test withdraw fee
+  let contractBalance = await publicClient.getBalance({ address: clubAddr as Address});
+  console.log(`contractBalance: ${formatEther(contractBalance)}`);
+  const withdrawFeeTx = await clubOwner.write.withdraw();
+  await publicClient.waitForTransactionReceipt({ hash: withdrawFeeTx });
+  contractBalance = await publicClient.getBalance({ address: clubAddr as Address});
+  console.log(`contractBalance: ${formatEther(contractBalance)}`);
   // get club info
   const clubId = createClubEvents[0].args.id;
   const channelIndex = createClubEvents[1].args.channel_index;
