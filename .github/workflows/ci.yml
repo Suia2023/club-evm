@@ -18,4 +18,5 @@ jobs:
         with:
           version: 8
       - run: pnpm install
+      - run: cp .env.example .env
       - run: pnpm demo
