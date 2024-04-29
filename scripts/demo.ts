@@ -6,7 +6,7 @@ import {
   decodeEventLog,
   parseEventLogs,
   bytesToHex,
-  fromHex, Address,
+  fromHex, Address, parseAbiItem,
 } from 'viem';
 import hre from 'hardhat';
 import { deploy } from './utils';
@@ -161,10 +161,10 @@ async function interact(clubAddr: string) {
   const newChannelInfo1 = await club.read.channels([clubId, 0n]);
   console.log('newChannelInfo1:', newChannelInfo1);
   assert(newChannelInfo1[1], 'delete channel failed');
-  // new message
-  const message = 'hello world';
-  const encodedMessage = messageEncoder.encode(message, MessageType.RAW);
-  const encodedMessageHex = bytesToHex(encodedMessage);
+  // // new message
+  // const message = 'hello world';
+  // const encodedMessage = messageEncoder.encode(message, MessageType.RAW);
+  // const encodedMessageHex = bytesToHex(encodedMessage);
   // const newMessageTx = await club.write.new_message([clubId, 1n, encodedMessageHex]);
   // const newMessageTxReceipt = await publicClient.waitForTransactionReceipt({ hash: newMessageTx });
   // const newMessageEvents = parseEventLogs({
@@ -192,6 +192,77 @@ async function interact(clubAddr: string) {
   // );
 }
 
+async function queries(clubAddr: string) {
+  // init club
+  const publicClient = await hre.viem.getPublicClient();
+  const clubArtifact = await hre.artifacts.readArtifact('SuiaClub');
+  const abi = clubArtifact.abi;
+  const club = getContract({
+    address: clubAddr as any,
+    abi,
+    client: {
+      public: publicClient,
+    },
+  });
+  // create more clubs by different users
+  let wallets = await hre.viem.getWalletClients();
+  wallets = wallets.slice(0, 5);
+  for(let wallet of wallets) {
+    console.log(`wallet: ${await wallet.account.address}`);
+    const clubOwner = getContract({
+      address: clubAddr as any,
+      abi,
+      client: {
+        public: publicClient,
+        wallet,
+      },
+    });
+    await clubOwner.write.create_club(
+      [
+        `club name ${await wallet.account.address}`,
+        'club logo',
+        'club desc with 中文 and 😁',
+        'announcement',
+        `erc20: ${await wallet.account.address}`,
+        1000000n,
+        'default channel name',
+      ],
+      {
+        value: await club.read.fee(),
+      },
+    );
+  }
+  // get club count
+  const clubCount = await club.read.club_count();
+  console.log(`clubCount: ${clubCount}`);
+  // get club info
+  const clubInfo = await club.read.clubs([2n]);
+  console.log('clubInfo:', clubInfo);
+  // get clubs with owner
+  for(let i = 0; i <= 5; i++) {
+    const info = await club.read.clubs([i]);
+    console.log(`club ${i} owner:`, info[1]);
+  }
+  // get clubs by owner
+  const ownerAddr = await wallets[1].account.address;
+  console.log(`ownerAddr: ${ownerAddr}`);
+  const createClubEvents = await publicClient.getLogs({
+    address: clubAddr as Address,
+    event: parseAbiItem('event ClubCreated( uint indexed id, address indexed owner, string indexed name, string description, string logo, string threshold_type, uint threshold )'),
+    args: {
+      owner: ownerAddr,
+    },
+    fromBlock: 'earliest',
+    toBlock: 'latest',
+  });
+  console.log('createClubEvents:', createClubEvents);
+  const ownerClubIds = createClubEvents.map((e: any) => e.args.id);
+  console.log('ownerClubIds:', ownerClubIds);
+  assert(ownerClubIds.length == 2, 'wrong owner club count');
+  // you can use the ids to query club info, since the info from the event logs is the initial info,
+  // they might be different from the latest info
+}
+
 async function main() {
   // deploy
   const clubAddr = await deploy();
@@ -201,6 +272,7 @@ async function main() {
   console.log(`deployer: ${await deployer.account.address}`);
   console.log(`user: ${await user.account.address}`);
   await interact(clubAddr);
+  await queries(clubAddr);
 }
 
 main()
