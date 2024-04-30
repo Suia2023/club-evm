@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "demo": "hardhat run scripts/demo.ts",
+    "update_abi": "cp artifacts/contracts/Club.sol/SuiaClub.json assets/SuiaClub.json",
     "prettier": "prettier --write scripts"
   },
   "keywords": [],

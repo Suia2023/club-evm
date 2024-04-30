@@ -10,6 +10,11 @@
       "address": "0xB72cC74d44d8166cfA4AeBF3ff4758B78B19E97f",
       "txHash": "0xfdca13275eb86e88f4e2e6eb04e2886b063ede56b0354c4d0a5eab015d931817",
       "kind": "transparent"
+    },
+    {
+      "address": "0xEAA8B693F6ab299a6A5EFA5316f1F9f717f3A829",
+      "txHash": "0x6ae164cdd8692c3577e8a35ebadb58ff5b5ad604bb582424d207fab745a322a5",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -332,6 +337,261 @@
           },
           "t_mapping(t_uint256,t_struct(Club)522_storage)": {
             "label": "mapping(uint256 => struct SuiaClub.Club)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Channel)527_storage": {
+            "label": "struct SuiaClub.Channel",
+            "members": [
+              {
+                "label": "name",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "deleted",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Club)522_storage": {
+            "label": "struct SuiaClub.Club",
+            "members": [
+              {
+                "label": "id",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "name",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "description",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "logo",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "threshold_type",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "threshold",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "announcement",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "channel_count",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "admins",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "9"
+              }
+            ],
+            "numberOfBytes": "320"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "6f4967d5f9f450e7ef13b598d379573e527597cef277a9cbc68ff2caa9194455": {
+      "address": "0x6A6Ee2B32DbF6EB102129b90605BF36e9f489278",
+      "txHash": "0xe8071500099563fc6325891a586db364323ec51b3324dafa867590f30be64f23",
+      "layout": {
+        "solcVersion": "0.8.24",
+        "storage": [
+          {
+            "label": "fee",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256",
+            "contract": "SuiaClub",
+            "src": "contracts/Club.sol:38"
+          },
+          {
+            "label": "clubs",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_uint256,t_struct(Club)522_storage)",
+            "contract": "SuiaClub",
+            "src": "contracts/Club.sol:40"
+          },
+          {
+            "label": "club_count",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256",
+            "contract": "SuiaClub",
+            "src": "contracts/Club.sol:42"
+          },
+          {
+            "label": "channels",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(Channel)527_storage))",
+            "contract": "SuiaClub",
+            "src": "contracts/Club.sol:44"
+          },
+          {
+            "label": "club_threshold_type_to_ids",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_mapping(t_string_memory_ptr,t_array(t_uint256)dyn_storage)",
+            "contract": "SuiaClub",
+            "src": "contracts/Club.sol:46"
+          },
+          {
+            "label": "club_owner_to_ids",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_mapping(t_address,t_array(t_uint256)dyn_storage)",
+            "contract": "SuiaClub",
+            "src": "contracts/Club.sol:47"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)64_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)14_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(address => uint256[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_string_memory_ptr,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(string => uint256[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_uint256,t_struct(Channel)527_storage))": {
+            "label": "mapping(uint256 => mapping(uint256 => struct SuiaClub.Channel))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Channel)527_storage)": {
+            "label": "mapping(uint256 => struct SuiaClub.Channel)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Club)522_storage)": {
+            "label": "mapping(uint256 => struct SuiaClub.Club)",
+            "numberOfBytes": "32"
+          },
+          "t_string_memory_ptr": {
+            "label": "string",
             "numberOfBytes": "32"
           },
           "t_string_storage": {

@@ -6,7 +6,9 @@ import {
   decodeEventLog,
   parseEventLogs,
   bytesToHex,
-  fromHex, Address, parseAbiItem,
+  fromHex,
+  Address,
+  parseAbiItem,
 } from 'viem';
 import hre from 'hardhat';
 import { deploy } from './utils';
@@ -75,11 +77,11 @@ async function interact(clubAddr: string) {
   });
   console.log('createClubEvents:', createClubEvents);
   // test withdraw fee
-  let contractBalance = await publicClient.getBalance({ address: clubAddr as Address});
+  let contractBalance = await publicClient.getBalance({ address: clubAddr as Address });
   console.log(`contractBalance: ${formatEther(contractBalance)}`);
   const withdrawFeeTx = await clubOwner.write.withdraw();
   await publicClient.waitForTransactionReceipt({ hash: withdrawFeeTx });
-  contractBalance = await publicClient.getBalance({ address: clubAddr as Address});
+  contractBalance = await publicClient.getBalance({ address: clubAddr as Address });
   console.log(`contractBalance: ${formatEther(contractBalance)}`);
   // get club info
   const clubId = createClubEvents[0].args.id;
@@ -207,7 +209,7 @@ async function queries(clubAddr: string) {
   // create more clubs by different users
   let wallets = await hre.viem.getWalletClients();
   wallets = wallets.slice(0, 5);
-  for(let wallet of wallets) {
+  for (let wallet of wallets) {
     console.log(`wallet: ${await wallet.account.address}`);
     const clubOwner = getContract({
       address: clubAddr as any,
@@ -239,28 +241,19 @@ async function queries(clubAddr: string) {
   const clubInfo = await club.read.clubs([2n]);
   console.log('clubInfo:', clubInfo);
   // get clubs with owner
-  for(let i = 0; i <= 5; i++) {
+  for (let i = 0; i <= 5; i++) {
     const info = await club.read.clubs([i]);
     console.log(`club ${i} owner:`, info[1]);
   }
   // get clubs by owner
   const ownerAddr = await wallets[1].account.address;
   console.log(`ownerAddr: ${ownerAddr}`);
-  const createClubEvents = await publicClient.getLogs({
-    address: clubAddr as Address,
-    event: parseAbiItem('event ClubCreated( uint indexed id, address indexed owner, string indexed name, string description, string logo, string threshold_type, uint threshold )'),
-    args: {
-      owner: ownerAddr,
-    },
-    fromBlock: 'earliest',
-    toBlock: 'latest',
-  });
-  console.log('createClubEvents:', createClubEvents);
-  const ownerClubIds = createClubEvents.map((e: any) => e.args.id);
+  const ownerClubIds = await club.read.get_clubs_by_owner([ownerAddr]);
   console.log('ownerClubIds:', ownerClubIds);
-  assert(ownerClubIds.length == 2, 'wrong owner club count');
-  // you can use the ids to query club info, since the info from the event logs is the initial info,
-  // they might be different from the latest info
+  // get clubs by threshold type
+  const thresholdType = `erc20: ${await wallets[1].account.address}`;
+  const thresholdClubIds = await club.read.get_clubs_by_threshold_type([thresholdType]);
+  console.log('thresholdClubIds:', thresholdClubIds);
 }
 
 async function main() {

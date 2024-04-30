@@ -42,8 +42,9 @@ contract SuiaClub is OwnableUpgradeable {
     uint public club_count;
     // channels, club_id => channel_index => channel
     mapping(uint => mapping(uint => Channel)) public channels;
-//    // messages
-//    mapping(uint => mapping(uint => Message[])) public messages;
+    // index
+    mapping(string => uint[]) public club_threshold_type_to_ids;
+    mapping(address => uint[]) public club_owner_to_ids;
 
     // ======== events ========
     event ClubCreated(
@@ -114,6 +115,9 @@ contract SuiaClub is OwnableUpgradeable {
         // create default channel
         Channel storage default_channel = channels[clubId][0];
         default_channel.name = _default_channel_name;
+        // add to index
+        club_threshold_type_to_ids[_threshold_type].push(clubId);
+        club_owner_to_ids[msg.sender].push(clubId);
         // emit ClubCreated event
         emit ClubCreated(
             clubId,
@@ -208,6 +212,14 @@ contract SuiaClub is OwnableUpgradeable {
         require(_channel_index < club.channel_count, "Channel does not exist");
         Channel storage channel = channels[_club_id][_channel_index];
         channel.deleted = true;
+    }
+
+    function get_clubs_by_threshold_type(string memory _threshold_type) public view returns (uint[] memory) {
+        return club_threshold_type_to_ids[_threshold_type];
+    }
+
+    function get_clubs_by_owner(address _owner) public view returns (uint[] memory) {
+        return club_owner_to_ids[_owner];
     }
 
 //    function new_message(uint _club_id, uint _channel_index, bytes memory _content) public {
