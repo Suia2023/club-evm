@@ -186,6 +186,29 @@ contract SuiaClub is OwnableUpgradeable {
         club.threshold = _threshold;
     }
 
+    function update_club_info(uint _club_id, string memory _name, string memory _logo, string memory _description, string memory _announcement, string memory _threshold_type, uint _threshold) public {
+        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
+        Club storage club = clubs[_club_id];
+        if(bytes(_name).length > 0) {
+            club.name = _name;
+        }
+        if(bytes(_logo).length > 0) {
+            club.logo = _logo;
+        }
+        if(bytes(_description).length > 0) {
+            club.description = _description;
+        }
+        if(bytes(_announcement).length > 0) {
+            club.announcement = _announcement;
+        }
+        if(bytes(_threshold_type).length > 0) {
+            club.threshold_type = _threshold_type;
+        }
+        if(_threshold > 0) {
+            club.threshold = _threshold;
+        }
+    }
+
     function add_club_channel(uint _club_id, string memory _name) public {
         require(bytes(_name).length > 0, "invalid channel name");
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");

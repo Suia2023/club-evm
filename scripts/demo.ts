@@ -139,6 +139,25 @@ async function interact(clubAddr: string) {
   const newClubInfo4 = await club.read.clubs([clubId]);
   console.log('newClubInfo4:', newClubInfo4);
   assert(newClubInfo4[6] === newThreshold, 'update club threshold failed');
+  // update club info
+  const newClubInfoBatch = [
+    clubId,
+    'new club name1',
+    'new club logo1',
+    'new club desc1',
+    'new announcement1',
+    '',  // threshold type unchanged, so set to empty string
+    100n,
+  ];
+  const updateClubInfoTx = await club.write.update_club_info(newClubInfoBatch);
+  await publicClient.waitForTransactionReceipt({ hash: updateClubInfoTx });
+  const newClubInfo6 = await club.read.clubs([clubId]);
+  console.log('newClubInfo6:', newClubInfo6);
+  assert(newClubInfo6[2] === newClubInfoBatch[1], 'update club name failed');
+  assert(newClubInfo6[4] === newClubInfoBatch[2], 'update club logo failed');
+  assert(newClubInfo6[3] === newClubInfoBatch[3], 'update club desc failed');
+  assert(newClubInfo6[7] === newClubInfoBatch[4], 'update club announcement failed');
+  assert(newClubInfo6[6] === newClubInfoBatch[6], 'update club threshold failed');
   // add channel
   const currentChannelCount = newClubInfo4[8];
   const newChannelName = 'new channel name';
