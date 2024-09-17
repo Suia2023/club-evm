@@ -1,10 +1,10 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import { parseEther } from "viem";
 
-const ONE_GWEI: bigint = parseEther("0.001");
+const default_fee: bigint = 1n;
 
 const SuiaClubModule = buildModule("SuiaClubModule", (m) => {
-  const createClubFee = m.getParameter("createClubFee", ONE_GWEI);
+  const createClubFee = m.getParameter("createClubFee", default_fee);
 
   const club = m.contract("SuiaClub", []);
 

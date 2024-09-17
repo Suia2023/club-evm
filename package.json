@@ -6,7 +6,8 @@
   "scripts": {
     "demo": "hardhat run scripts/demo.ts",
     "update_abi": "cp artifacts/contracts/Club.sol/SuiaClub.json assets/SuiaClub.json",
-    "prettier": "prettier --write scripts"
+    "prettier": "prettier --write scripts",
+    "build": "hardhat compile"
   },
   "keywords": [],
   "author": "",
@@ -35,6 +36,7 @@
     "viem": "^2.7.6"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2",
     "@openzeppelin/contracts-upgradeable": "^5.0.2",
     "dotenv": "^16.4.5"
   }

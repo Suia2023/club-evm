@@ -25,7 +25,10 @@ const messageEncoder = new MessageEncoder();
 async function interact(clubAddr: string) {
   // init clients
   const publicClient = await hre.viem.getPublicClient();
-  const [ownerWalletClient, userWalletClient] = await hre.viem.getWalletClients();
+  const wallets = await hre.viem.getWalletClients();
+  console.log(`wallets: ${wallets.length}`);
+  const ownerWalletClient = wallets[0];
+  const userWalletClient = wallets[1];
   // init contracts
   const clubArtifact = await hre.artifacts.readArtifact('SuiaClub');
   const abi = clubArtifact.abi;
@@ -54,20 +57,9 @@ async function interact(clubAddr: string) {
   fee = await club.read.fee();
   console.log(`new fee: ${formatEther(fee)}`);
   // create club
-  const createTx = await club.write.create_club(
-    [
-      'club name',
-      'club logo',
-      'club desc with 中文 and 😁',
-      'announcement',
-      'erc20:0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-      1000000n,
-      'default channel name',
-    ],
-    {
-      value: fee,
-    },
-  );
+  const createTx = await club.write.create_club(['club name'], {
+    value: fee,
+  });
   console.log(`createClubTx: ${createTx}`);
   const createClubReceipt = await publicClient.waitForTransactionReceipt({ hash: createTx });
   console.log(createClubReceipt.logs);
@@ -85,19 +77,28 @@ async function interact(clubAddr: string) {
   console.log(`contractBalance: ${formatEther(contractBalance)}`);
   // get club info
   const clubId = createClubEvents[0].args.id;
-  const channelIndex = createClubEvents[1].args.channel_index;
-  console.log(`clubId: ${clubId}, channelIndex: ${channelIndex}`);
-  const clubInfo = await club.read.clubs([clubId]);
-  console.log('clubInfo:', clubInfo);
   // add admin
-  const [ownerAddr] = await ownerWalletClient.getAddresses();
+  const [ownerAddr, adminAddr] = await ownerWalletClient.getAddresses();
   console.log(`ownerAddr: ${ownerAddr}`);
+  console.log(`adminAddr: ${adminAddr}`);
   let isAdmin = await club.read.is_authorized_for_club([clubId, ownerAddr]);
   console.log(`isAdmin: ${isAdmin}`);
   const addAdminTx = await club.write.add_club_admin([clubId, ownerAddr]);
   await publicClient.waitForTransactionReceipt({ hash: addAdminTx });
   isAdmin = await club.read.is_authorized_for_club([clubId, ownerAddr]);
   assert(isAdmin, 'add admin failed');
+  // get club admins
+  const clubAdmins = await club.read.get_club_admins([clubId]);
+  console.log('clubAdmins:', clubAdmins);
+  assert(clubAdmins.length === 1, 'club admins length is not 1');
+  assert(clubAdmins[0] === ownerAddr, 'club admins is not owner');
+  // add one more admin
+  const addAnotherAdminTx = await club.write.add_club_admin([clubId, adminAddr]);
+  await publicClient.waitForTransactionReceipt({ hash: addAnotherAdminTx });
+  const clubAdmins1 = await club.read.get_club_admins([clubId]);
+  console.log('clubAdmins1:', clubAdmins1);
+  assert(clubAdmins1.length === 2, 'club admins length is not 2');
+  assert(clubAdmins1.includes(adminAddr), 'club admins does not include admin');
   // remove admin
   const removeAdminTx = await club.write.remove_club_admin([clubId, ownerAddr]);
   await publicClient.waitForTransactionReceipt({ hash: removeAdminTx });
@@ -107,110 +108,37 @@ async function interact(clubAddr: string) {
   const newClubName = 'new club name';
   const updateNameTx = await club.write.update_club_name([clubId, newClubName]);
   await publicClient.waitForTransactionReceipt({ hash: updateNameTx });
-  const newClubInfo = await club.read.clubs([clubId]);
-  console.log('newClubInfo:', newClubInfo);
-  assert(newClubInfo[2] === newClubName, 'update club name failed');
-  // update club desc
-  const newClubDesc = 'new club desc';
-  const updateDescTx = await club.write.update_club_description([clubId, newClubDesc]);
-  await publicClient.waitForTransactionReceipt({ hash: updateDescTx });
-  const newClubInfo1 = await club.read.clubs([clubId]);
-  console.log('newClubInfo1:', newClubInfo1);
-  assert(newClubInfo1[3] === newClubDesc, 'update club desc failed');
-  // update club logo
-  const newClubLogo = 'new club logo';
-  const updateLogoTx = await club.write.update_club_logo([clubId, newClubLogo]);
-  await publicClient.waitForTransactionReceipt({ hash: updateLogoTx });
-  const newClubInfo2 = await club.read.clubs([clubId]);
-  console.log('newClubInfo2:', newClubInfo2);
-  assert(newClubInfo2[4] === newClubLogo, 'update club logo failed');
-  // update club announcement
-  const newAnnouncement = 'new announcement';
-  const updateAnnouncementTx = await club.write.update_club_announcement([clubId, newAnnouncement]);
-  await publicClient.waitForTransactionReceipt({ hash: updateAnnouncementTx });
-  const newClubInfo3 = await club.read.clubs([clubId]);
-  console.log('newClubInfo3:', newClubInfo3);
-  assert(newClubInfo3[7] === newAnnouncement, 'update club announcement failed');
-  // update club threshold
-  const newThreshold = 2000000n;
-  const thresholdType = newClubInfo3[5];
-  const updateThresholdTx = await club.write.update_club_threshold([clubId, thresholdType, newThreshold]);
-  await publicClient.waitForTransactionReceipt({ hash: updateThresholdTx });
-  const newClubInfo4 = await club.read.clubs([clubId]);
-  console.log('newClubInfo4:', newClubInfo4);
-  assert(newClubInfo4[6] === newThreshold, 'update club threshold failed');
-  // update club info
-  const newClubInfoBatch = [
-    clubId,
-    'new club name1',
-    'new club logo1',
-    'new club desc1',
-    'new announcement1',
-    '',  // threshold type unchanged, so set to empty string
-    100n,
-  ];
-  const updateClubInfoTx = await club.write.update_club_info(newClubInfoBatch);
-  await publicClient.waitForTransactionReceipt({ hash: updateClubInfoTx });
-  const newClubInfo6 = await club.read.clubs([clubId]);
-  console.log('newClubInfo6:', newClubInfo6);
-  assert(newClubInfo6[2] === newClubInfoBatch[1], 'update club name failed');
-  assert(newClubInfo6[4] === newClubInfoBatch[2], 'update club logo failed');
-  assert(newClubInfo6[3] === newClubInfoBatch[3], 'update club desc failed');
-  assert(newClubInfo6[7] === newClubInfoBatch[4], 'update club announcement failed');
-  assert(newClubInfo6[6] === newClubInfoBatch[6], 'update club threshold failed');
-  // add channel
-  const currentChannelCount = newClubInfo4[8];
-  const newChannelName = 'new channel name';
-  const addChannelTx = await club.write.add_club_channel([clubId, newChannelName]);
-  await publicClient.waitForTransactionReceipt({ hash: addChannelTx });
-  const newClubInfo5 = await club.read.clubs([clubId]);
-  console.log('newClubInfo5:', newClubInfo5);
-  assert(newClubInfo5[8] === currentChannelCount + 1n, 'add channel failed');
-  // get channel info
-  const channelInfo = await club.read.channels([clubId, 0n]);
-  console.log('channelInfo:', channelInfo);
-  // update channel name
-  const newChannelName1 = 'new channel name1';
-  const updateChannelNameTx = await club.write.update_club_channel_name([clubId, 0n, newChannelName1]);
-  await publicClient.waitForTransactionReceipt({ hash: updateChannelNameTx });
-  const newChannelInfo = await club.read.channels([clubId, 0n]);
-  console.log('newChannelInfo:', newChannelInfo);
-  assert(newChannelInfo[0] === newChannelName1, 'update channel name failed');
-  // delete club channel
-  const deleteChannelTx = await club.write.delete_club_channel([clubId, 0n]);
-  await publicClient.waitForTransactionReceipt({ hash: deleteChannelTx });
-  const newChannelInfo1 = await club.read.channels([clubId, 0n]);
-  console.log('newChannelInfo1:', newChannelInfo1);
-  assert(newChannelInfo1[1], 'delete channel failed');
-  // // new message
-  // const message = 'hello world';
-  // const encodedMessage = messageEncoder.encode(message, MessageType.RAW);
-  // const encodedMessageHex = bytesToHex(encodedMessage);
-  // const newMessageTx = await club.write.new_message([clubId, 1n, encodedMessageHex]);
-  // const newMessageTxReceipt = await publicClient.waitForTransactionReceipt({ hash: newMessageTx });
-  // const newMessageEvents = parseEventLogs({
-  //   abi,
-  //   logs: newMessageTxReceipt.logs,
-  // });
-  // console.log('newMessageEvents:', newMessageEvents);
-  // // new 100 messages
-  // const txns = [];
-  // for (let i = 0; i < 100; i++) {
-  //   const message = `message ${i}`;
-  //   const encodedMessage = messageEncoder.encode(message, MessageType.XOR);
-  //   const encodedMessageHex = bytesToHex(encodedMessage);
-  //   const newMessageTx = await club.write.new_message([clubId, 1n, encodedMessageHex]);
-  //   txns.push(newMessageTx);
-  // }
-  // await Promise.all(txns.map((tx) => publicClient.waitForTransactionReceipt({ hash: tx })));
-  // // query messages
-  // const [messages, total_num] = await club.read.get_club_channel_messages([clubId, 1n, -10n, 10n]);
-  // console.log('total_num:', total_num);
-  // console.log('messages:', messages);
-  // console.log(
-  //   'decodedMessages:',
-  //   messages.map((m: any) => messageEncoder.decode(Uint8Array.from(Buffer.from(m.content.slice(2), 'hex')))),
-  // );
+  const newClubName1 = await club.read.get_club_name([clubId]);
+  console.log('newClubName1:', newClubName1);
+  assert(newClubName1 === newClubName, 'update club name failed');
+  // join for 10 times with different users
+  console.log('joining club...');
+  for (let i = 0; i < 10; i++) {
+    const walletClient = wallets[i + 2];
+    console.log(`joining club with ${await walletClient.account.address}`);
+    const joinTx = await walletClient.writeContract({
+      address: clubAddr as any,
+      abi,
+      functionName: 'join_club',
+      args: [clubId],
+    });
+    console.log(`joinTx: ${joinTx}`);
+    await publicClient.waitForTransactionReceipt({ hash: joinTx });
+  }
+  // get club members
+  const clubMembers = await club.read.get_club_members([clubId]);
+  console.log('clubMembers:', clubMembers);
+  assert(clubMembers.length === 10, 'club members length is not 10');
+  // get club members by page
+  const offset = 1n;
+  const limit = 8n;
+  const clubMembers1 = await club.read.get_club_members_paged([clubId, offset, limit]);
+  console.log('clubMembers1:', clubMembers1);
+  assert(clubMembers1.length === Number(limit), 'club members length is not 8');
+  assert(
+    clubMembers.slice(Number(offset), Number(offset) + Number(limit)).every((member) => clubMembers1.includes(member)),
+    'club members is not equal',
+  );
 }
 
 async function queries(clubAddr: string) {
@@ -238,41 +166,29 @@ async function queries(clubAddr: string) {
         wallet,
       },
     });
-    await clubOwner.write.create_club(
-      [
-        `club name ${await wallet.account.address}`,
-        'club logo',
-        'club desc with 中文 and 😁',
-        'announcement',
-        `erc20: ${await wallet.account.address}`,
-        1000000n,
-        'default channel name',
-      ],
-      {
-        value: await club.read.fee(),
-      },
-    );
+    await clubOwner.write.create_club([`club name ${await wallet.account.address}`], {
+      value: await club.read.fee(),
+    });
   }
   // get club count
   const clubCount = await club.read.club_count();
   console.log(`clubCount: ${clubCount}`);
-  // get club info
-  const clubInfo = await club.read.clubs([2n]);
-  console.log('clubInfo:', clubInfo);
+  // get club name
+  const clubName = await club.read.get_club_name([2n]);
+  console.log('clubName:', clubName);
+  // get club owner
+  const clubOwner = await club.read.get_club_owner([2n]);
+  console.log('clubOwner:', clubOwner);
   // get clubs with owner
-  for (let i = 0; i <= 5; i++) {
-    const info = await club.read.clubs([i]);
-    console.log(`club ${i} owner:`, info[1]);
+  for (let i = 0n; i <= 5n; i++) {
+    const info = await club.read.get_club_owner([i]);
+    console.log(`club ${i} owner:`, info);
   }
   // get clubs by owner
   const ownerAddr = await wallets[1].account.address;
   console.log(`ownerAddr: ${ownerAddr}`);
   const ownerClubIds = await club.read.get_clubs_by_owner([ownerAddr]);
   console.log('ownerClubIds:', ownerClubIds);
-  // get clubs by threshold type
-  const thresholdType = `erc20: ${await wallets[1].account.address}`;
-  const thresholdClubIds = await club.read.get_clubs_by_threshold_type([thresholdType]);
-  console.log('thresholdClubIds:', thresholdClubIds);
 }
 
 async function main() {
@@ -284,7 +200,7 @@ async function main() {
   console.log(`deployer: ${await deployer.account.address}`);
   console.log(`user: ${await user.account.address}`);
   await interact(clubAddr);
-  await queries(clubAddr);
+  // await queries(clubAddr);
 }
 
 main()

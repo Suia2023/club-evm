@@ -1,80 +1,62 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-contract SuiaClub is OwnableUpgradeable {
-    // data structures
+contract SuiaClub is Ownable {
+    using EnumerableSet for EnumerableSet.AddressSet;
+    // Data structures
     struct Club {
-        // id is the unique identifier of the club, start from 0
+        // id is the unique identifier of the club, starting from 0
         uint id;
+        // name is the name of the club
+        string name;
+        // owner is the owner of the club
         address owner;
-        string name;
-        string description;
-        string logo;
-        // threshold_type is the type of asset required to join the club
-        // e.g. "ETH", "ERC20:0x...", "ERC721:0x...", "ERC1155:0x..."
-        string threshold_type;
-        // threshold is the minimum number of assets required to join the club
-        uint threshold;
-        string announcement;
-        uint channel_count;
-        mapping(address => bool) admins;
+        // admins is the admins of the club
+        EnumerableSet.AddressSet admins;
+        // members is the members of the club
+        EnumerableSet.AddressSet members;
     }
-
-    struct Channel {
-        string name;
-        bool deleted;
-    }
-
-//    struct Message {
-//        address sender;
-//        bytes content;
-//        uint timestamp;
-//        bool deleted;
-//    }
 
     // fee is the amount of native token required to create a club
     uint public fee;
     // clubs
-    mapping(uint => Club) public clubs;
+    mapping(uint => Club) private clubs;
     // club_count is the number of clubs created
     uint public club_count;
-    // channels, club_id => channel_index => channel
-    mapping(uint => mapping(uint => Channel)) public channels;
     // index
-    mapping(string => uint[]) public club_threshold_type_to_ids;
     mapping(address => uint[]) public club_owner_to_ids;
 
     // ======== events ========
     event ClubCreated(
         uint indexed id,
         address indexed owner,
-        string indexed name,
-        string description,
-        string logo,
-        string threshold_type,
-        uint threshold
-    );
-
-    event ChannelCreated(
-        uint indexed club_id,
-        uint indexed channel_index,
         string indexed name
     );
 
-//    event MessageCreated(
-//        uint indexed club_id,
-//        uint indexed channel_index,
-//        address indexed sender,
-//        uint message_index,
-//        bytes content,
-//        uint timestamp
-//    );
+    event ClubAdminAdded(
+        uint indexed club_id,
+        address indexed admin
+    );
 
+    event ClubAdminRemoved(
+        uint indexed club_id,
+        address indexed admin
+    );
+
+    event ClubMemberJoined(
+        uint indexed club_id,
+        address indexed member
+    );
+
+    event ClubMemberExited(
+        uint indexed club_id,
+        address indexed member
+    );
     // ======== functions ========
-    function initialize(uint _fee) public initializer {
-        OwnableUpgradeable.__Ownable_init(msg.sender);
+    constructor(uint _fee) Ownable(msg.sender) {
         fee = _fee;
     }
 
@@ -87,18 +69,10 @@ contract SuiaClub is OwnableUpgradeable {
     }
 
     function create_club(
-        string memory _name,
-        string memory _logo,
-        string memory _description,
-        string memory _announcement,
-        string memory _threshold_type,
-        uint _threshold,
-        string memory _default_channel_name
+        string memory _name
     ) payable public {
         require(msg.value >= fee, "Insufficient funds to create club");
         require(bytes(_name).length > 0, "invalid club name");
-        require(bytes(_threshold_type).length > 0, "invalid threshold type");
-        require(bytes(_default_channel_name).length > 0, "invalid default channel name");
         uint clubId = club_count;
         club_count++;
         // create club
@@ -106,199 +80,113 @@ contract SuiaClub is OwnableUpgradeable {
         club.id = clubId;
         club.owner = msg.sender;
         club.name = _name;
-        club.description = _description;
-        club.logo = _logo;
-        club.threshold_type = _threshold_type;
-        club.threshold = _threshold;
-        club.announcement = _announcement;
-        club.channel_count = 1;
-        // create default channel
-        Channel storage default_channel = channels[clubId][0];
-        default_channel.name = _default_channel_name;
         // add to index
-        club_threshold_type_to_ids[_threshold_type].push(clubId);
         club_owner_to_ids[msg.sender].push(clubId);
         // emit ClubCreated event
         emit ClubCreated(
             clubId,
             msg.sender,
-            _name,
-            _description,
-            _logo,
-            _threshold_type,
-            _threshold
-        );
-        // emit ChannelCreated event
-        emit ChannelCreated(
-            clubId,
-            0,
-            _default_channel_name
+            _name
         );
     }
 
     function is_authorized_for_club(uint _club_id, address _user) public view returns (bool) {
+        require(_club_id < club_count, "Club does not exist");
         Club storage club = clubs[_club_id];
-        return _user == club.owner || club.admins[_user];
+        return _user == club.owner || club.admins.contains(_user);
     }
 
     function add_club_admin(uint _club_id, address _admin) public {
+        require(_club_id < club_count, "Club does not exist");
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
-        club.admins[_admin] = true;
+        club.admins.add(_admin);
     }
 
     function remove_club_admin(uint _club_id, address _admin) public {
+        require(_club_id < club_count, "Club does not exist");
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
-        club.admins[_admin] = false;
+        club.admins.remove(_admin);
     }
 
     function update_club_name(uint _club_id, string memory _name) public {
+        require(_club_id < club_count, "Club does not exist");
         require(bytes(_name).length > 0, "invalid club name");
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
         club.name = _name;
     }
 
-    function update_club_description(uint _club_id, string memory _description) public {
-        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
-        Club storage club = clubs[_club_id];
-        club.description = _description;
-    }
-
-    function update_club_logo(uint _club_id, string memory _logo) public {
-        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
-        Club storage club = clubs[_club_id];
-        club.logo = _logo;
-    }
-
-    function update_club_announcement(uint _club_id, string memory _announcement) public {
-        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
-        Club storage club = clubs[_club_id];
-        club.announcement = _announcement;
-    }
-
-    function update_club_threshold(uint _club_id, string memory _threshold_type, uint _threshold) public {
-        require(bytes(_threshold_type).length > 0, "invalid threshold type");
-        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
-        Club storage club = clubs[_club_id];
-        club.threshold_type = _threshold_type;
-        club.threshold = _threshold;
-    }
-
-    function update_club_info(uint _club_id, string memory _name, string memory _logo, string memory _description, string memory _announcement, string memory _threshold_type, uint _threshold) public {
-        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
-        Club storage club = clubs[_club_id];
-        if(bytes(_name).length > 0) {
-            club.name = _name;
-        }
-        if(bytes(_logo).length > 0) {
-            club.logo = _logo;
-        }
-        if(bytes(_description).length > 0) {
-            club.description = _description;
-        }
-        if(bytes(_announcement).length > 0) {
-            club.announcement = _announcement;
-        }
-        if(bytes(_threshold_type).length > 0) {
-            club.threshold_type = _threshold_type;
-        }
-        if(_threshold > 0) {
-            club.threshold = _threshold;
-        }
-    }
-
-    function add_club_channel(uint _club_id, string memory _name) public {
-        require(bytes(_name).length > 0, "invalid channel name");
-        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
-        Club storage club = clubs[_club_id];
-        uint channel_index = club.channel_count;
-        club.channel_count++;
-        Channel storage channel = channels[_club_id][channel_index];
-        channel.name = _name;
-        emit ChannelCreated(_club_id, channel_index, _name);
-    }
-
-    function update_club_channel_name(uint _club_id, uint _channel_index, string memory _name) public {
-        require(bytes(_name).length > 0, "invalid channel name");
-        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
-        Club storage club = clubs[_club_id];
-        require(_channel_index < club.channel_count, "Channel does not exist");
-        Channel storage channel = channels[_club_id][_channel_index];
-        channel.name = _name;
-    }
-
-    function delete_club_channel(uint _club_id, uint _channel_index) public {
-        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
-        Club storage club = clubs[_club_id];
-        require(_channel_index < club.channel_count, "Channel does not exist");
-        Channel storage channel = channels[_club_id][_channel_index];
-        channel.deleted = true;
-    }
-
-    function get_clubs_by_threshold_type(string memory _threshold_type) public view returns (uint[] memory) {
-        return club_threshold_type_to_ids[_threshold_type];
-    }
-
     function get_clubs_by_owner(address _owner) public view returns (uint[] memory) {
         return club_owner_to_ids[_owner];
     }
 
-//    function new_message(uint _club_id, uint _channel_index, bytes memory _content) public {
-//        Channel storage channel = channels[_club_id][_channel_index];
-//        require(bytes(channel.name).length > 0, "Club or Channel does not exist");
-//        require(!channel.deleted, "Channel is deleted");
-//        Message[] storage channel_messages = messages[_club_id][_channel_index];
-//        channel_messages.push(Message({
-//            sender: msg.sender,
-//            content: _content,
-//            timestamp: block.timestamp,
-//            deleted: false
-//        }));
-//        emit MessageCreated(
-//            _club_id,
-//            _channel_index,
-//            msg.sender,
-//            channel_messages.length - 1,
-//            _content,
-//            block.timestamp
-//        );
-//    }
-//
-//    function delete_message(uint _club_id, uint _channel_index, uint _message_index) public {
-//        Message[] storage channel_messages = messages[_club_id][_channel_index];
-//        require(_message_index < channel_messages.length, "Message does not exist");
-//        Message storage message = channel_messages[_message_index];
-//        require(message.sender == msg.sender, "Unauthorized to delete message");
-//        message.deleted = true;
-//    }
-//
-//    // view functions
-//    function get_club_channel_messages(uint _club_id, uint _channel_index, int signed_offset, uint limit) public view returns (Message[] memory msgs, uint total_num) {
-//        Channel storage channel = channels[_club_id][_channel_index];
-//        require(bytes(channel.name).length > 0, "Club or Channel does not exist");
-//        require(!channel.deleted, "Channel is deleted");
-//        Message[] storage channel_messages = messages[_club_id][_channel_index];
-//        uint length = channel_messages.length;
-//        uint offset;
-//        if(signed_offset < 0) {
-//            require(length > uint(-signed_offset), "Offset out of range");
-//            offset = length - uint(-signed_offset);
-//        } else {
-//            offset = uint(signed_offset);
-//        }
-//        if (offset >= length) {
-//            return (new Message[](0), length);
-//        }
-//        uint end = offset + limit;
-//        if (end > length) {
-//            end = length;
-//        }
-//        Message[] memory result = new Message[](end - offset);
-//        for (uint i = offset; i < end; i++) {
-//            result[i - offset] = channel_messages[i];
-//        }
-//        return (result, length);
-//    }
+    function join_club(uint _club_id) public returns (bool) {
+        require(_club_id < club_count, "Club does not exist");
+        Club storage club = clubs[_club_id];
+        bool success = club.members.add(msg.sender);
+        if (success) {
+            emit ClubMemberJoined(_club_id, msg.sender);
+        }
+        return success;
+    }
+
+    function exit_club(uint _club_id) public returns (bool) {
+        require(_club_id < club_count, "Club does not exist");
+        Club storage club = clubs[_club_id];
+        bool success = club.members.remove(msg.sender);
+        if (success) {
+            emit ClubMemberExited(_club_id, msg.sender);
+        }
+        return success;
+    }
+
+    function get_club_admins(uint _club_id) public view returns (address[] memory) {
+        require(_club_id < club_count, "Club does not exist");
+        Club storage club = clubs[_club_id];
+        return club.admins.values();
+    }
+
+    function get_club_members(uint _club_id) public view returns (address[] memory) {
+        require(_club_id < club_count, "Club does not exist");
+        Club storage club = clubs[_club_id];
+        return club.members.values();
+    }
+
+    function get_club_member_count(uint _club_id) public view returns (uint) {
+        require(_club_id < club_count, "Club does not exist");
+        Club storage club = clubs[_club_id];
+        return club.members.length();
+    }
+
+    function get_club_members_paged(uint _club_id, uint _offset, uint _limit) public view returns (address[] memory) {
+        require(_club_id < club_count, "Club does not exist");
+        Club storage club = clubs[_club_id];
+        uint length = club.members.length();
+        uint end = _offset + _limit;
+        if (end > length) {
+            end = length;
+        }
+        if(end <= _offset) {
+            return new address[](0);
+        }
+        address[] memory members = new address[](end - _offset);
+        for (uint i = _offset; i < end; i++) {
+            members[i - _offset] = club.members.at(i);
+        }
+        return members;
+    }
+
+    function get_club_name(uint _club_id) public view returns (string memory) {
+        require(_club_id < club_count, "Club does not exist");
+        Club storage club = clubs[_club_id];
+        return club.name;
+    }
+
+    function get_club_owner(uint _club_id) public view returns (address) {
+        require(_club_id < club_count, "Club does not exist");
+        Club storage club = clubs[_club_id];
+        return club.owner;
+    }
 }
