@@ -29,6 +29,13 @@ contract SuiaClub is Ownable {
     // index
     mapping(address => uint[]) public club_owner_to_ids;
 
+    // view struct
+    struct ClubView {
+        uint id;
+        string name;
+        address owner;
+    }
+
     // ======== events ========
     event ClubCreated(
         uint indexed id,
@@ -55,6 +62,12 @@ contract SuiaClub is Ownable {
         uint indexed club_id,
         address indexed member
     );
+
+    event ClubNameUpdated(
+        uint indexed club_id,
+        string indexed name
+    );
+
     // ======== functions ========
     constructor(uint _fee) Ownable(msg.sender) {
         fee = _fee;
@@ -116,6 +129,7 @@ contract SuiaClub is Ownable {
         require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
         Club storage club = clubs[_club_id];
         club.name = _name;
+        emit ClubNameUpdated(_club_id, _name);
     }
 
     function get_clubs_by_owner(address _owner) public view returns (uint[] memory) {
@@ -141,6 +155,8 @@ contract SuiaClub is Ownable {
         }
         return success;
     }
+
+    // ======== view functions ========
 
     function get_club_admins(uint _club_id) public view returns (address[] memory) {
         require(_club_id < club_count, "Club does not exist");
@@ -188,5 +204,22 @@ contract SuiaClub is Ownable {
         require(_club_id < club_count, "Club does not exist");
         Club storage club = clubs[_club_id];
         return club.owner;
+    }
+
+    function get_club_view(uint _club_id) public view returns (ClubView memory) {
+        Club storage club = clubs[_club_id];
+        return ClubView(
+            club.id,
+            club.name,
+            club.owner
+        );
+    }
+
+    function get_club_view_by_ids(uint[] memory _club_ids) public view returns (ClubView[] memory) {
+        ClubView[] memory club_views = new ClubView[](_club_ids.length);
+        for (uint i = 0; i < _club_ids.length; i++) {
+            club_views[i] = get_club_view(_club_ids[i]);
+        }
+        return club_views;
     }
 }
