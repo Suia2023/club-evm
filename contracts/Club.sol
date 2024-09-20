@@ -6,51 +6,41 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract SuiaClub is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.UintSet;
     // Data structures
     struct Club {
         // id is the unique identifier of the club, starting from 0
         uint id;
         // name is the name of the club
         string name;
-        // owner is the owner of the club
-        address owner;
-        // admins is the admins of the club
-        EnumerableSet.AddressSet admins;
+        // creator is the creator of the club
+        address creator;
         // members is the members of the club
         EnumerableSet.AddressSet members;
     }
 
     // fee is the amount of native token required to create a club
     uint public fee;
-    // clubs
-    mapping(uint => Club) private clubs;
     // club_count is the number of clubs created
     uint public club_count;
+    // clubs
+    mapping(uint => Club) private clubs;
     // index
-    mapping(address => uint[]) public club_owner_to_ids;
+    mapping(address => EnumerableSet.UintSet) private joined_club_ids;
 
     // view struct
     struct ClubView {
         uint id;
         string name;
-        address owner;
+        address creator;
+        uint member_count;
     }
 
     // ======== events ========
     event ClubCreated(
         uint indexed id,
-        address indexed owner,
+        address indexed creator,
         string indexed name
-    );
-
-    event ClubAdminAdded(
-        uint indexed club_id,
-        address indexed admin
-    );
-
-    event ClubAdminRemoved(
-        uint indexed club_id,
-        address indexed admin
     );
 
     event ClubMemberJoined(
@@ -91,10 +81,11 @@ contract SuiaClub is Ownable {
         // create club
         Club storage club = clubs[clubId];
         club.id = clubId;
-        club.owner = msg.sender;
+        club.creator = msg.sender;
         club.name = _name;
-        // add to index
-        club_owner_to_ids[msg.sender].push(clubId);
+        // join club
+        club.members.add(msg.sender);
+        joined_club_ids[msg.sender].add(clubId);
         // emit ClubCreated event
         emit ClubCreated(
             clubId,
@@ -106,21 +97,7 @@ contract SuiaClub is Ownable {
     function is_authorized_for_club(uint _club_id, address _user) public view returns (bool) {
         require(_club_id < club_count, "Club does not exist");
         Club storage club = clubs[_club_id];
-        return _user == club.owner || club.admins.contains(_user);
-    }
-
-    function add_club_admin(uint _club_id, address _admin) public {
-        require(_club_id < club_count, "Club does not exist");
-        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
-        Club storage club = clubs[_club_id];
-        club.admins.add(_admin);
-    }
-
-    function remove_club_admin(uint _club_id, address _admin) public {
-        require(_club_id < club_count, "Club does not exist");
-        require(is_authorized_for_club(_club_id, msg.sender), "Unauthorized for club");
-        Club storage club = clubs[_club_id];
-        club.admins.remove(_admin);
+        return _user == club.creator;
     }
 
     function update_club_name(uint _club_id, string memory _name) public {
@@ -132,16 +109,13 @@ contract SuiaClub is Ownable {
         emit ClubNameUpdated(_club_id, _name);
     }
 
-    function get_clubs_by_owner(address _owner) public view returns (uint[] memory) {
-        return club_owner_to_ids[_owner];
-    }
-
     function join_club(uint _club_id) public returns (bool) {
         require(_club_id < club_count, "Club does not exist");
         Club storage club = clubs[_club_id];
         bool success = club.members.add(msg.sender);
         if (success) {
             emit ClubMemberJoined(_club_id, msg.sender);
+            joined_club_ids[msg.sender].add(_club_id);
         }
         return success;
     }
@@ -152,28 +126,17 @@ contract SuiaClub is Ownable {
         bool success = club.members.remove(msg.sender);
         if (success) {
             emit ClubMemberExited(_club_id, msg.sender);
+            joined_club_ids[msg.sender].remove(_club_id);
         }
         return success;
     }
 
     // ======== view functions ========
 
-    function get_club_admins(uint _club_id) public view returns (address[] memory) {
-        require(_club_id < club_count, "Club does not exist");
-        Club storage club = clubs[_club_id];
-        return club.admins.values();
-    }
-
     function get_club_members(uint _club_id) public view returns (address[] memory) {
         require(_club_id < club_count, "Club does not exist");
         Club storage club = clubs[_club_id];
         return club.members.values();
-    }
-
-    function get_club_member_count(uint _club_id) public view returns (uint) {
-        require(_club_id < club_count, "Club does not exist");
-        Club storage club = clubs[_club_id];
-        return club.members.length();
     }
 
     function get_club_members_paged(uint _club_id, uint _offset, uint _limit) public view returns (address[] memory) {
@@ -194,24 +157,13 @@ contract SuiaClub is Ownable {
         return members;
     }
 
-    function get_club_name(uint _club_id) public view returns (string memory) {
-        require(_club_id < club_count, "Club does not exist");
-        Club storage club = clubs[_club_id];
-        return club.name;
-    }
-
-    function get_club_owner(uint _club_id) public view returns (address) {
-        require(_club_id < club_count, "Club does not exist");
-        Club storage club = clubs[_club_id];
-        return club.owner;
-    }
-
     function get_club_view(uint _club_id) public view returns (ClubView memory) {
         Club storage club = clubs[_club_id];
         return ClubView(
             club.id,
             club.name,
-            club.owner
+            club.creator,
+            club.members.length()
         );
     }
 
@@ -221,5 +173,9 @@ contract SuiaClub is Ownable {
             club_views[i] = get_club_view(_club_ids[i]);
         }
         return club_views;
+    }
+
+    function get_joined_club_ids(address _user) public view returns (uint[] memory) {
+        return joined_club_ids[_user].values();
     }
 }
