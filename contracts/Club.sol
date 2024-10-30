@@ -178,4 +178,10 @@ contract SuiaClub is Ownable {
     function get_joined_club_ids(address _user) public view returns (uint[] memory) {
         return joined_club_ids[_user].values();
     }
+
+    function is_club_member(uint _club_id, address _user) public view returns (bool) {
+        require(_club_id < club_count, "Club does not exist");
+        Club storage club = clubs[_club_id];
+        return club.members.contains(_user);
+    }
 }
